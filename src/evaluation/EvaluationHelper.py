@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+import itertools
 
 import torch
 import torch.nn as nn
@@ -17,10 +18,13 @@ class EvaluationHelper:
 
     def f_measure(y_pred, y_true):
         return f1_score(y_true,y_pred,average="macro")
+    
+    def acc(y_pred,y_true):
+        return accuracy_score(y_true,y_pred)
         
     
-    def accuracy(y_pred, y_true):
-        return accuracy_score(y_true,y_pred)
+    def ans(y_pred, y_true):
+        return np.mean(np.abs(y_pred-y_true)<0.3)
 
     
     def conf_mtrx(y_pred, y_true):
@@ -44,24 +48,13 @@ class EvaluationHelper:
         other2 = dataset_size-taikaku1-taikaku2 #1 neighbor
 
 
-        tgt = f'{CFG.results_path}/confusion_matrix/{opt.model}'
+        tgt = f'{opt.result_path}/{opt.sign}/confusion_matrix/{opt.model}'
         os.makedirs(tgt, exist_ok=True)
 
         np.savetxt(tgt + f"/{opt.sign}_{opt.num_classes}class_"
                    f"{opt.fold}fold_{opt.epoch}epoch_confusion_matrix.txt", matrix, fmt="%.0f")
         
-        # with open(tgt + f"/{opt.sign}_{opt.num_classes}class_"
-        #           f"{opt.fold}fold_{opt.epoch}epoch_confusion_matrix.txt","w") as f:
-        #     f.write(matrix)
-        # print('dataset_size', dataset_size)
-        # print('taikaku1, taikaku2, other1, other2',taikaku1, taikaku2, other1, other2)
-        # print('--> Saved Total Confusion Matrix txt')
-
-        #print(f"normal_acc:{taikaku1/dataset_size}, 1neighbor_acc:{(taikaku1+taikaku2)/dataset_size}")
-        #バグの温床
-        return taikaku1/dataset_size, (taikaku1+taikaku2)/dataset_size,\
-               other1, other2
-
+        return taikaku1/dataset_size, (taikaku1+taikaku2)/dataset_size,
 
     def total_report(y_pred, y_true):
         opt = get_args()
@@ -86,37 +79,115 @@ class EvaluationHelper:
         return [i for i, _num in enumerate(pred_list) if _num == num]
 
 
-    def criterion(y_pred, y_true):
-        return nn.CrossEntropyLoss(y_pred,y_true)
+    def threshold_config(pred_value):
+        pred_value = pred_value.tolist()
+        #print(f'pred_value {pred_value}')
+        """
+        pred_value.shape : (Batchsize, 1)
+        
+        """
+        for i in range(len(pred_value)):
+            """
+            class label 0 : pred_value<=0.5
+            class label 1 : pred_value>0.5 pred_value<=1.5
+            class label 2 : pred_value>1.5 pred_value<=2.5
+            class label 3 : pred_value>2.5 pred_value<=3.5
+            class label 4 : pred_value>3.5 pred_value<=4.5
+            class label 5 : pred_value>4.5 pred_value<=5.5
+            class label 6 : pred_value>5.5 
 
+            """
+            if pred_value[i][0]<=0.5:
+                pred_value[i][0] = 0
 
-class FocalLoss(nn.Module):
-    def __init__(self, gamma=2, alpha=None, size_average=True):
-        super(FocalLoss, self).__init__()
-        self.gamma = gamma
-        self.alpha = alpha
-        if isinstance(alpha,(float,int)): self.alpha = torch.Tensor([alpha,1-alpha])
-        if isinstance(alpha,list): self.alpha = torch.Tensor(alpha)
-        self.size_average = size_average
+            elif pred_value[i][0]>0.5 and pred_value[i][0]<=1.5:
+                pred_value[i][0] = 1
 
-    def forward(self, input, target):
-        if input.dim()>2:
-            input = input.view(input.size(0),input.size(1),-1)  # N,C,H,W => N,C,H*W
-            input = input.transpose(1,2)    # N,C,H*W => N,H*W,C
-            input = input.contiguous().view(-1,input.size(2))   # N,H*W,C => N*H*W,C
-        target = target.view(-1,1)
+            elif pred_value[i][0]>1.5 and pred_value[i][0]<=2.5:
+                pred_value[i][0] = 2
 
-        logpt = F.log_softmax(input,dim=1)
-        logpt = logpt.gather(1,target)
-        logpt = logpt.view(-1)
-        pt = Variable(logpt.data.exp())
+            elif pred_value[i][0]>2.5 and pred_value[i][0]<=3.5:
+                pred_value[i][0] = 3
 
-        if self.alpha is not None:
-            if self.alpha.type()!=input.data.type():
-                self.alpha = self.alpha.type_as(input.data)
-            at = self.alpha.gather(0,target.data.view(-1))
-            logpt = logpt * Variable(at)
+            elif pred_value[i][0]>3.5 and pred_value[i][0]<=4.5:
+                pred_value[i][0] = 4
 
-        loss = -1 * (1-pt)**self.gamma * logpt
-        if self.size_average: return loss.mean()
-        else: return loss.sum()
+            elif pred_value[i][0]>4.5 and pred_value[i][0]<=5.5:
+                pred_value[i][0] = 5
+
+            else:
+                pred_value[i][0] = 6           
+
+        return pred_value
+
+    def threshold_config_for_inf(pred_value):
+        pred_value = pred_value.tolist()
+        #print(f'pred_value {pred_value}')
+        """
+        pred_value.shape : (Batchsize, 1)
+        
+        """
+        for i in range(len(pred_value)):
+            """
+            class label 0 : pred_value<=0.5
+            class label 1 : pred_value>0.5 pred_value<=1.5
+            class label 2 : pred_value>1.5 pred_value<=2.5
+            class label 3 : pred_value>2.5 pred_value<=3.5
+            class label 4 : pred_value>3.5 pred_value<=4.5
+            class label 5 : pred_value>4.5 pred_value<=5.5
+            class label 6 : pred_value>5.5 
+
+            """
+            if pred_value[i]<=0.5:
+                pred_value[i] = 0
+
+            elif pred_value[i]>0.5 and pred_value[i]<=1.5:
+                pred_value[i] = 1
+
+            elif pred_value[i]>1.5 and pred_value[i]<=2.5:
+                pred_value[i] = 2
+
+            elif pred_value[i]>2.5 and pred_value[i]<=3.5:
+                pred_value[i] = 3
+
+            elif pred_value[i]>3.5 and pred_value[i]<=4.5:
+                pred_value[i] = 4
+
+            elif pred_value[i]>4.5 and pred_value[i]<=5.5:
+                pred_value[i] = 5
+
+            else:
+                pred_value[i] = 6           
+
+        return pred_value
+
+# class focalloss(nn.module):
+#     def __init__(self, gamma=2, alpha=none, size_average=true):
+#         super(focalloss, self).__init__()
+#         self.gamma = gamma
+#         self.alpha = alpha
+#         if isinstance(alpha,(float,int)): self.alpha = torch.tensor([alpha,1-alpha])
+#         if isinstance(alpha,list): self.alpha = torch.tensor(alpha)
+#         self.size_average = size_average
+
+#     def forward(self, input, target):
+#         if input.dim()>2:
+#             input = input.view(input.size(0),input.size(1),-1)  # N,C,H,W => N,C,H*W
+#             input = input.transpose(1,2)    # N,C,H*W => N,H*W,C
+#             input = input.contiguous().view(-1,input.size(2))   # N,H*W,C => N*H*W,C
+#         target = target.view(-1,1)
+
+#         logpt = F.log_softmax(input,dim=1)
+#         logpt = logpt.gather(1,target)
+#         logpt = logpt.view(-1)
+#         pt = Variable(logpt.data.exp())
+
+#         if self.alpha is not None:
+#             if self.alpha.type()!=input.data.type():
+#                 self.alpha = self.alpha.type_as(input.data)
+#             at = self.alpha.gather(0,target.data.view(-1))
+#             logpt = logpt * Variable(at)
+
+#         loss = -1 * (1-pt)**self.gamma * logpt
+#         if self.size_average: return loss.mean()
+#         else: return loss.sum()

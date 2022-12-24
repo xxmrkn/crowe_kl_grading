@@ -9,16 +9,6 @@ from utils.Parser import get_args
 class CFG:
     opt = get_args()
     
-    base_path = ''
-    dataset_path2 = ''
-    dataset_path = ''
-    weights_path = f''
-    datalist_path = f''
-    image_path = dataset_path2 + ''
-    csv_path = dataset_path + '' 
-    df_path = dataset_path + ''
-    results_path = f''
-
     key = ''
 
     scheduler = 'CosineAnnealinglr'
@@ -36,14 +26,20 @@ class CFG:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-    if opt.num_classes == 7:
-        labels_dict = {}
 
-        labels = [0,1,2,3,4,5,6]
+    labels_dict = {}
 
-        labels_name = []
+    labels = [0,1,2,3,4,5,6]
 
-        labels_index = []
+    labels_name = ['1,1',
+                    '1,2',
+                    '1,3',
+                    '1,4',
+                    '2,4',
+                    '3,4',
+                    '4,4']
+
+    labels_index = []
     
     def to_numpy(tensor):
         return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu()

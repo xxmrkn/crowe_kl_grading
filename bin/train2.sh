@@ -2,33 +2,30 @@
 
 PROJECT=''
 NUM_GPU=1
-NUM_CORE=4
+NUM_CORE=2
 SIMG=''
 
 mkdir -p "${PROJECT}/slurm"
 
-NODE='cl-viking'
-
-for i in 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22;
-do
-sbatch --gres=gpu:${NUM_GPU} -n ${NUM_CORE} -D ${PROJECT} -w ${NODE} -o slurm/datalist${i}_slurm_${NODE}_%j.out \
+NODE='cl-panda'
+sbatch --gres=gpu:${NUM_GPU} -n ${NUM_CORE} -D ${PROJECT} -w ${NODE} -o slurm/slurm_${NODE}_%j.out \
   --wrap="singularity exec --nv -B /win/salmon/user ${SIMG} \
     python src/train.py \
     --sign '' \
-    --datalist ${i} \
-    --model 'VisionTransformer_Base16' \
+    --datalist 8 \
+    --model 'VGG16' \
     --epoch 300 \
     --fold 4 \
     --image_size 224 \
     --batch_size 32 \
     --valid_batch_size 8 \
-    --lr 5e-5 \
-    --min_lr 5e-6 \
-    --t_max 300 \
+    --lr 1e-4 \
+    --min_lr 5e-5 \
+    --t_max 1350 \
     --t_0 25 \
     --wd 1e-4 \
     --num_classes 1 \
-    --num_workers 4 \
+    --num_workers 2 \
     --num_sampling 1 \
     --optimizer 'Adam' \
     --criterion 'MAE Loss' \
@@ -36,23 +33,11 @@ sbatch --gres=gpu:${NUM_GPU} -n ${NUM_CORE} -D ${PROJECT} -w ${NODE} -o slurm/da
     --df_path '' \
     --datalist_path  '' \
     --image_path '' \
-    --result_path '' "
-sleep 20s
-done
-
+    --result_path ''"
 # NORMAL DRR image or BONE DRR iamge
 #--image_path '/win/salmon/user/masuda/project/vit_kl_crowe/20220511_DRR_with_Crowe_Kl/DRR_AP' \
 #--image_path '/win/salmon/user/masuda/project/makedrr/150_Extracted_2D_DRR_944_masuda/DRR_AP' \
 
-# 5e-4 to 3e-4 no1
-# 5e-4 to 5e-5 
-
 # t_max = epoch x batchsize
 # 200 epoch t_max 1800
 # 300 epoch t_max 2700
-
-
-# NODE='cl-yamaneko'
-# sbatch --gres=gpu:${NUM_GPU} -n ${NUM_CORE} -D ${PROJECT} -w ${NODE} -o slurm/slurm_${NODE}_%j.out \
-#   --wrap="singularity exec --nv -B /win/salmon/user ${SIMG} \
-#     python umap.py --sign 0919_train --datalist 8"

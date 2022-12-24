@@ -36,7 +36,19 @@ def choose_model(model_name):
             if isinstance(m, nn.Dropout):
                 m.p = 0.1
 
+        # model.heads = nn.Sequential(nn.Linear(in_features=768,
+        #                                       out_features=100,
+        #                                       bias=True),
+        #                             nn.Linear(in_features=100,
+        #                                       out_features=10,
+        #                                       bias=True),
+        #                             nn.Linear(in_features=10,
+        #                                       out_features=opt.num_classes))
+        
         model.heads = nn.Sequential(nn.Linear(in_features=768,
+                                              out_features=384,
+                                              bias=True),
+                                    nn.Linear(in_features=384,
                                               out_features=opt.num_classes))
         
         model = model.to(CFG.device)
@@ -72,8 +84,16 @@ def choose_model(model_name):
                         list(model.children())[0][i].add_module('Dropout', nn.Dropout(p=0.2))
 
         model.classifier = nn.Sequential(nn.Linear(in_features=2208,
-                                                   out_features=opt.num_classes,
-                                                   bias=True))
+                                                   out_features=1024,
+                                                   bias=True),
+                                         nn.Linear(in_features=1024,
+                                                   out_features=512,
+                                                   bias=True),
+                                         nn.Linear(in_features=512,
+                                                   out_features=256,
+                                                   bias=True),
+                                         nn.Linear(in_features=256,
+                                                   out_features=opt.num_classes))
         model = model.to(CFG.device)
 
 
@@ -84,17 +104,30 @@ def choose_model(model_name):
         for i,m in enumerate(list(model.children())[0]):
             #print(i,m)
             if i in (4,9,16,30):
-                modules.append(nn.Dropout(p=0.3, inplace=False))
+                modules.append(nn.Dropout(p=0.1, inplace=False))
             modules.append(m)
 
         model.features = nn.Sequential(*modules)
-        model.classifier[6] = nn.Linear(in_features=4096,
-                                        out_features=opt.num_classes)
+        model.classifier[6] = nn.Sequential(nn.Linear(in_features=4096,
+                                                      out_features=2048,
+                                                      bias=True),
+                                            nn.Linear(in_features=2048,
+                                                      out_features=1024,
+                                                      bias=True),
+                                            nn.Linear(in_features=1024,
+                                                      out_features=512,
+                                                      bias=True),
+                                            nn.Linear(in_features=512,
+                                                      out_features=256,
+                                                      bias=True),
+                                            nn.Linear(in_features=256,
+                                                      out_features=opt.num_classes))
         for m in model.classifier:
             if isinstance(m, nn.Dropout):
-                m.p = 0.3
+                m.p = 0.1
 
         model = model.to(CFG.device)
+        print(model)
 
     elif model_name == 'Inceptionv3':
         model = models.inception_v3(pretrained=True)
