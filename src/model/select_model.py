@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from model.coatnet import coatnet_0,coatnet_1,coatnet_2,coatnet_3,coatnet_4
-from utils.Parser import get_args
+from utils.parser import get_args
 from utils.Configuration import CFG
 
 #model

@@ -4,7 +4,7 @@ import random
 import torch
 import numpy as np
 
-from utils.Parser import get_args
+from utils.parser import get_args
 
 class CFG:
     opt = get_args()

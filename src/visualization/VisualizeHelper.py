@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from utils.Parser import get_args
+from utils.parser import get_args
 from utils.Configuration import CFG
 #from csv2pptx.csv2pptx import csv2pptx
 #import seaborn as sns

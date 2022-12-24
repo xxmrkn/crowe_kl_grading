@@ -19,7 +19,7 @@ from albumentations import (Compose, OneOf, Normalize,
 from albumentations.pytorch import ToTensorV2
 
 from utils.Configuration import CFG
-from utils.Parser import get_args
+from utils.parser import get_args
 
 #DataAugmentation
 def get_transforms(data):

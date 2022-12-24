@@ -12,7 +12,7 @@ from sklearn.metrics import f1_score,accuracy_score,classification_report
 from sklearn.metrics import confusion_matrix
 
 from utils.Configuration import CFG
-from utils.Parser import get_args
+from utils.parser import get_args
 
 class EvaluationHelper:
 

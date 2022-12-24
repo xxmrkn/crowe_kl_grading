@@ -1,23 +1,24 @@
 # crowe_kl_classification
-Automatic Classification Crowe and Kl
+Automatic Grading of Crowe and Kl
 
 # Project
-深層学習を用いたDigitally Reconstructed Radiographsに基づく変形性股関節症の多指標自動分類
+深層学習を用いたDigitally Reconstructed Radiographsに基づく変形性股関節症の多指標自動回帰・分類
 
 # Aim 
-CTから作成されたDRRを用いて、Crowe分類(脱臼度)・KL(OA重症度)の自動分類を行う。
+CTから作成されたDRRを用いて、Crowe分類(脱臼度)・KL(OA重症度)の自動回帰・分類を行う。
 
 # Configuration
 * image_size : 224x224
 * training_batchsize : 32
-* validation_batchsize : 32
-* num_epochs : 200
-* min_lr : 1e-5
-* max_lr : 3e-5
+* validation_batchsize : 8
+* test_batchsize : 8
+* num_epochs : 200 or 300
+* min_lr : 5e-4
+* max_lr : 5e-5
 * lr_scheduler : CosineAnnealingLR
-* T_max : 1800
+* T_max : 300
 * num_folds : 4
-* num_classes : 7
+* num_classes : 1 or 7
 
 
 # Model
@@ -34,28 +35,28 @@ All models were pretrained by ImageNet.
 ```
 .  
 ├── 📁 bin  
-│   └── 📄 train.sh
-├── 📁 dataset, docs, notebook
-│   └── 📄 No description
+│   ├── 📄 train.sh
+│   ├── 📄 train2.sh
+│   ├── 📄 inference.sh
+│   └── 📄 inference2.sh
+│  
 └── 📁 src
     ├── 📁 dataset
     │   └── 📄 dataset.py
     ├── 📁 evaluation
-    │   └── 📄 EvaluationHelper.py  
+    │   └── 📄 evaluationhelper.py  
     ├── 📁 function
-    │   ├── 📄 compare_acc.py
-    │   └── 📄 extract.py
+    │   ├── 📄 load_datalist.py
+    │   └── 📄 prepare_dataframe.py
     ├── 📁 model
-    │   ├── 📄 coatnet.py
     │   └── 📄 select_model.py  
     ├── 📁 utils
-    │   ├── 📄 Configuration.py
-    │   └── 📄 Parser.py
+    │   ├── 📄 configuration.py
+    │   ├── 📄 wandb_config.py
+    │   └── 📄 parser.py
     ├── 📁 visualization
-    │   ├── 📄 visualize_bplot.py
-    │   ├── 📄 visualize_lineplot.py
-    │   └── 📄 VisualizeHelper.py
-    ├── 📄 mcdropout.py
+    │   └── 📄 visualizehelper.py
     ├── 📄 train.py
+    ├── 📄 inference.py
     └── 📄 trainval_one_epoch.py
 ```

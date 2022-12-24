@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
 
-from utils.Parser import get_args
+from utils.parser import get_args
 from utils.Configuration import CFG
 from utils.wandb_config import wandb_config
 from datasets.dataset import TrainDataset,TestDataset,get_transforms

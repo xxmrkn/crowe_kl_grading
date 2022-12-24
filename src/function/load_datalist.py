@@ -2,7 +2,7 @@ import argparse
 import os
 import pathlib
 
-from utils.Parser import get_args
+from utils.parser import get_args
 
 def load_train_data():
 

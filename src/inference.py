@@ -21,7 +21,7 @@ from tqdm import tqdm
 from datasets.dataset import TestDataset
 tqdm.pandas()
 
-from utils.Parser import get_args
+from utils.parser import get_args
 from utils.Configuration import CFG
 import datasets.dataset as dataset
 from function.load_datalist import load_test_data

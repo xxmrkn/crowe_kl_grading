@@ -1,7 +1,7 @@
 import argparse
 import wandb
 from utils.Configuration import CFG
-from utils.Parser import get_args
+from utils.parser import get_args
 
 def wandb_config(model,fold):
     

@@ -3,7 +3,7 @@ tqdm.pandas()
 
 import torch
 
-from utils.Parser import get_args
+from utils.parser import get_args
 from utils.Configuration import CFG
 
 def train_one_epoch(model,
