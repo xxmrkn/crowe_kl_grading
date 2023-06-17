@@ -1,49 +1,31 @@
 import torch
 import torch.nn as nn
 from torchvision import models
-from model.coatnet import coatnet_0,coatnet_1,coatnet_2,coatnet_3,coatnet_4
-from utils.parser import get_args
-from utils.Configuration import CFG
+from utils.argparser import get_args
+from utils.configuration import Configuration
 
-#model
-def choose_model(model_name):
+# Model
+def select_model(model_name: str):
     opt = get_args()
 
-    if model_name == 'CoAtNet_0':
-        model = coatnet_0()
-        model = model.to(CFG.device)
-
-    elif model_name == 'CoAtNet_1':
-        model = coatnet_1()
-        model = model.to(CFG.device)
-
-    elif model_name == 'CoAtNet_2':
-        model = coatnet_2()
-        model = model.to(CFG.device)
-
-    elif model_name == 'CoAtNet_3':
-        model = coatnet_3()
-        model = model.to(CFG.device)
-
-    # elif model_name == 'CoAtNet_4':
-    #     model = coatnet_4()
-    #     model = model.to(CFG.device)
-    
-    # Use Pretrained Weight
-    elif model_name == 'VisionTransformer_Base16':
-        model = models.vit_b_16(pretrained=True)
+    if model_name == 'VisionTransformer_Base16':
+        model = models.vit_b_16()
+        
+        # Load pretrained weight
+        if opt.pretrained:
+            try:
+                model.load_state_dict(
+                    torch.load(
+                        f'{opt.base_path}/src/models/weight/vit_b_16-c867db91.pth'
+                    )
+                )
+            except:
+                print("Weight file Not Found !!")
+        
+        # Set ratio of Dropout
         for m in model.modules():
             if isinstance(m, nn.Dropout):
                 m.p = 0.1
-
-        # model.heads = nn.Sequential(nn.Linear(in_features=768,
-        #                                       out_features=100,
-        #                                       bias=True),
-        #                             nn.Linear(in_features=100,
-        #                                       out_features=10,
-        #                                       bias=True),
-        #                             nn.Linear(in_features=10,
-        #                                       out_features=opt.num_classes))
         
         model.heads = nn.Sequential(nn.Linear(in_features=768,
                                               out_features=384,
@@ -51,28 +33,57 @@ def choose_model(model_name):
                                     nn.Linear(in_features=384,
                                               out_features=opt.num_classes))
         
-        model = model.to(CFG.device)
+        model = model.to(Configuration.device)
+
 
     elif model_name == 'VisionTransformer_Base32':
-        model = models.vit_b_32(pretrained=True)
+        model = models.vit_b_32()
         model.heads = nn.Sequential(nn.Linear(in_features=768,
-                                              out_features=CFG.num_classes))
-        model = model.to(CFG.device)
+                                              out_features=384,
+                                              bias=True),
+                                    nn.Linear(in_features=384,
+                                              out_features=opt.num_classes))
+        model = model.to(Configuration.device)
 
     elif model_name == 'VisionTransformer_Large16':
-        model = models.vit_l_16(pretrained=True)
+        model = models.vit_l_16()
         model.heads = nn.Sequential(nn.Linear(in_features=1024,
-                                              out_features=CFG.num_classes))
-        model = model.to(CFG.device)
+                                              out_features=512,
+                                              bias=True),
+                                    nn.Linear(in_features=512,
+                                              out_features=256,
+                                              bias=True),
+                                    nn.Linear(in_features=256,
+                                              out_features=opt.num_classes))
+        model = model.to(Configuration.device)
 
     elif model_name == 'VisionTransformer_Large32':
-        model = models.vit_l_32(pretrained=True)
+        model = models.vit_l_32()
         model.heads = nn.Sequential(nn.Linear(in_features=1024,
-                                              out_features=CFG.num_classes))
-        model = model.to(CFG.device)
+                                              out_features=512,
+                                              bias=True),
+                                    nn.Linear(in_features=512,
+                                              out_features=256,
+                                              bias=True),
+                                    nn.Linear(in_features=256,
+                                              out_features=opt.num_classes))
+        model = model.to(Configuration.device)
+        
+        
 
     elif model_name == 'DenseNet161':
-        model = models.densenet161(pretrained=True)
+        model = models.densenet161(pretrained=False)
+        
+        # Load pretrained weight
+        if opt.pretrained:
+            try:
+                model.load_state_dict(
+                    torch.load(
+                        f'{opt.base_path}/src/models/weight/densenet161-8d451a50.pth'
+                    )
+                )
+            except:
+                print("Weight file Not Found !!")
 
     # Add Dropout 
         for i in range(12):
@@ -94,15 +105,25 @@ def choose_model(model_name):
                                                    bias=True),
                                          nn.Linear(in_features=256,
                                                    out_features=opt.num_classes))
-        model = model.to(CFG.device)
+        model = model.to(Configuration.device)
 
 
     elif model_name == 'VGG16':
-        model = models.vgg16(pretrained=True)
+        model = models.vgg16(pretrained=False)
+        
+        # Load pretrained weight
+        if opt.pretrained:
+            try:
+                model.load_state_dict(
+                    torch.load(
+                        f'{opt.base_path}/src/models/weight/vgg16-397923af.pth'
+                    )
+                )
+            except:
+                print("Weight file Not Found !!")
 
         modules = []
         for i,m in enumerate(list(model.children())[0]):
-            #print(i,m)
             if i in (4,9,16,30):
                 modules.append(nn.Dropout(p=0.1, inplace=False))
             modules.append(m)
@@ -126,30 +147,6 @@ def choose_model(model_name):
             if isinstance(m, nn.Dropout):
                 m.p = 0.1
 
-        model = model.to(CFG.device)
-        print(model)
+        model = model.to(Configuration.device)
 
-    elif model_name == 'Inceptionv3':
-        model = models.inception_v3(pretrained=True)
-        model.fc = nn.Linear(in_features=2048,
-                             out_features=CFG.num_classes)
-        model = model.to(CFG.device)
-
-    elif model_name == 'efficientnet_b0':
-        model = models.efficientnet_b0(pretrained=True)
-        model.classifier = nn.Linear(in_features=1280,
-                                     out_features=CFG.num_classes)
-        model = model.to(CFG.device)
-
-    elif model_name == 'efficientnet_b3':
-        model = models.efficientnet_b3(pretrained=True)
-        model.classifier = nn.Linear(in_features=1536,
-                                     out_features=CFG.num_classes)
-        model = model.to(CFG.device)
-
-    elif model_name == 'efficientnet_b7':
-        model = models.efficientnet_b7(pretrained=True)
-        model.classifier = nn.Linear(in_features=2560,
-                                     out_features=CFG.num_classes)
-        model = model.to(CFG.device)
     return model

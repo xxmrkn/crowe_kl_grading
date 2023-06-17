@@ -1,13 +1,13 @@
 import argparse
 import wandb
-from utils.Configuration import CFG
-from utils.parser import get_args
+from utils.configuration import Configuration
+from utils.argparser import get_args
 
 def wandb_config(model,fold):
     
     opt = get_args()
 
-    wandb.login(key=CFG.key)
+    wandb.login(key=Configuration.key)
     run = wandb.init(project = f'{opt.sign}{opt.num_classes}class_crowe_kl-regression', 
                         config = {"model_name": opt.model,
                                   "learning_rate": opt.lr,

@@ -4,14 +4,9 @@ import random
 import torch
 import numpy as np
 
-from utils.parser import get_args
+class Configuration(object):
 
-class CFG:
-    opt = get_args()
-    
     key = ''
-
-    scheduler = 'CosineAnnealinglr'
 
     difference = []
     probability = []
@@ -25,26 +20,20 @@ class CFG:
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-
-
     labels_dict = {}
 
-    labels = [0,1,2,3,4,5,6]
+    labels = []
 
-    labels_name = ['1,1',
-                    '1,2',
-                    '1,3',
-                    '1,4',
-                    '2,4',
-                    '3,4',
-                    '4,4']
+    labels_name = []
 
     labels_index = []
-    
+
+    @staticmethod 
     def to_numpy(tensor):
         return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu()
 
-    def set_seed(seed = opt.seed):
+    @staticmethod
+    def set_seed(seed):
         np.random.seed(seed)
         random.seed(seed)
         torch.manual_seed(seed)
