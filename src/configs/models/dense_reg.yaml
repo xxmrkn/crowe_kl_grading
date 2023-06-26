@@ -1,0 +1,46 @@
+sign: 20230626_debug
+
+path:
+    base: 
+    df: 
+    datalist: 
+    image: 
+    result: 
+
+general:
+    datalist: 1
+    fold: 4
+    image_size: 224
+    batch_size: 32
+    valid_batch_size: 8
+    num_workers: 4
+    wandb_mode: disabled
+    seed: 42
+
+train:
+    epoch: 3
+
+inference:
+    num_sampling: 1
+
+model:
+    name: DenseNet161
+    pretrained: off
+    mcdropout: off
+    dropout_ratio: 0.2
+    dropout_ratio2: 0.1
+    num_classes: 1
+
+scheduler:
+    name: CosineAnnealingLR
+    t_max: 300
+    t_0: 25
+    min_lr: 0.00005
+
+optimizer:
+    name: Adam
+    lr: 0.0005
+    wd: 0.0001
+
+criterion:
+    name: MAE Loss

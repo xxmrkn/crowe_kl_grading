@@ -1,51 +1,77 @@
+import os
+import re
+
+import hydra
+from omegaconf import DictConfig, OmegaConf
+
 import torch
 import torch.nn as nn
-from torchvision import models
-from utils.argparser import get_args
-from utils.configuration import Configuration
+from torchvision import models 
+from utils.configuration_helper import ConfigurationHelper
+
+# For DenseNet161
+def _load_state_dict(model, weights):
+    # '.'s are no longer allowed in module names, but previous _DenseLayer
+    # has keys 'norm.1', 'relu.1', 'conv.1', 'norm.2', 'relu.2', 'conv.2'.
+    # They are also in the checkpoints in model_urls. This pattern is used
+    # to find such keys.
+    pattern = re.compile(
+        r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$"
+    )
+
+    state_dict = weights
+    for key in list(state_dict.keys()):
+        res = pattern.match(key)
+        if res:
+            new_key = res.group(1) + res.group(2)
+            state_dict[new_key] = state_dict[key]
+            del state_dict[key]
+
+    model.load_state_dict(state_dict)
 
 # Model
-def select_model(model_name: str):
-    opt = get_args()
+def select_model(cfg):
 
-    if model_name == 'VisionTransformer_Base16':
-        model = models.vit_b_16()
+    if cfg.models.model.name == 'VisionTransformer_Base16':
+        model = models.vit_b_16(weights=None)
         
         # Load pretrained weight
-        if opt.pretrained:
+        if cfg.models.model.pretrained:
             try:
                 model.load_state_dict(
                     torch.load(
-                        f'{opt.base_path}/src/models/weight/vit_b_16-c867db91.pth'
+                        f'{cfg.models.path.base}/src/models/weight/vit_b_16-c867db91.pth'
                     )
                 )
-            except:
-                print("Weight file Not Found !!")
+      
+            except Exception as e:
+                print(e, "- Weight file Not Found !!")
+        else:
+            print("- No Pretrained Weight (Training Mode or Inference Mode)")
         
-        # Set ratio of Dropout
+        # Set the ratio of Dropout
         for m in model.modules():
             if isinstance(m, nn.Dropout):
-                m.p = 0.1
+                m.p = cfg.models.model.dropout_ratio
         
         model.heads = nn.Sequential(nn.Linear(in_features=768,
                                               out_features=384,
                                               bias=True),
                                     nn.Linear(in_features=384,
-                                              out_features=opt.num_classes))
+                                              out_features=cfg.models.model.num_classes))
         
-        model = model.to(Configuration.device)
+        model = model.to(ConfigurationHelper.device)
 
-
-    elif model_name == 'VisionTransformer_Base32':
+    elif cfg.models.model.name == 'VisionTransformer_Base32':
         model = models.vit_b_32()
         model.heads = nn.Sequential(nn.Linear(in_features=768,
                                               out_features=384,
                                               bias=True),
                                     nn.Linear(in_features=384,
-                                              out_features=opt.num_classes))
-        model = model.to(Configuration.device)
+                                              out_features=cfg.models.model.num_classes))
+        model = model.to(ConfigurationHelper.device)
 
-    elif model_name == 'VisionTransformer_Large16':
+    elif cfg.models.model.name == 'VisionTransformer_Large16':
         model = models.vit_l_16()
         model.heads = nn.Sequential(nn.Linear(in_features=1024,
                                               out_features=512,
@@ -54,10 +80,10 @@ def select_model(model_name: str):
                                               out_features=256,
                                               bias=True),
                                     nn.Linear(in_features=256,
-                                              out_features=opt.num_classes))
-        model = model.to(Configuration.device)
+                                              out_features=cfg.models.model.num_classes))
+        model = model.to(ConfigurationHelper.device)
 
-    elif model_name == 'VisionTransformer_Large32':
+    elif cfg.models.model.name == 'VisionTransformer_Large32':
         model = models.vit_l_32()
         model.heads = nn.Sequential(nn.Linear(in_features=1024,
                                               out_features=512,
@@ -66,33 +92,34 @@ def select_model(model_name: str):
                                               out_features=256,
                                               bias=True),
                                     nn.Linear(in_features=256,
-                                              out_features=opt.num_classes))
-        model = model.to(Configuration.device)
+                                              out_features=cfg.models.model.num_classes))
+        model = model.to(ConfigurationHelper.device)
         
         
 
-    elif model_name == 'DenseNet161':
-        model = models.densenet161(pretrained=False)
+    elif cfg.models.model.name == 'DenseNet161':
+        model = models.densenet161(weights=None)
         
         # Load pretrained weight
-        if opt.pretrained:
+        if cfg.models.model.pretrained:
             try:
-                model.load_state_dict(
-                    torch.load(
-                        f'{opt.base_path}/src/models/weight/densenet161-8d451a50.pth'
-                    )
+                _load_state_dict(
+                    model = model,
+                    weights = torch.load(f'{cfg.models.path.base}/src/models/weight/densenet161-8d451a50.pth')
                 )
-            except:
-                print("Weight file Not Found !!")
+            except Exception as e:
+                print(e, "- Weight file Not Found !!")
+        else:
+            print("- No Pretrained Weight (Training Mode or Inference Mode)")
 
     # Add Dropout 
         for i in range(12):
             if i>=4 and i<=10:
                 a = len(list(model.children())[0][i])
                 
-                for j in range(1,a+1):
-                    if a == 4:
-                        list(model.children())[0][i].add_module('Dropout', nn.Dropout(p=0.2))
+                if a == 4:
+                    list(model.children())[0][i].add_module('Dropout',
+                                                            nn.Dropout(p=cfg.models.model.dropout_ratio))
 
         model.classifier = nn.Sequential(nn.Linear(in_features=2208,
                                                    out_features=1024,
@@ -104,28 +131,29 @@ def select_model(model_name: str):
                                                    out_features=256,
                                                    bias=True),
                                          nn.Linear(in_features=256,
-                                                   out_features=opt.num_classes))
-        model = model.to(Configuration.device)
+                                                   out_features=cfg.models.model.num_classes))
+        model = model.to(ConfigurationHelper.device)
 
-
-    elif model_name == 'VGG16':
-        model = models.vgg16(pretrained=False)
+    elif cfg.models.model.name == 'VGG16':
+        model = models.vgg16(weights=None)
         
         # Load pretrained weight
-        if opt.pretrained:
+        if cfg.models.model.pretrained:
             try:
                 model.load_state_dict(
                     torch.load(
-                        f'{opt.base_path}/src/models/weight/vgg16-397923af.pth'
+                        f'{cfg.models.path.base}/src/models/weight/vgg16-397923af.pth'
                     )
                 )
             except:
-                print("Weight file Not Found !!")
+                print("- Weight file Not Found !!")
+        else:
+            print("- No Pretrained Weight (Training Mode or Inference Mode)")
 
         modules = []
         for i,m in enumerate(list(model.children())[0]):
             if i in (4,9,16,30):
-                modules.append(nn.Dropout(p=0.1, inplace=False))
+                modules.append(nn.Dropout(p=cfg.models.model.dropout_ratio, inplace=False))
             modules.append(m)
 
         model.features = nn.Sequential(*modules)
@@ -142,11 +170,11 @@ def select_model(model_name: str):
                                                       out_features=256,
                                                       bias=True),
                                             nn.Linear(in_features=256,
-                                                      out_features=opt.num_classes))
+                                                      out_features=cfg.models.model.num_classes))
         for m in model.classifier:
             if isinstance(m, nn.Dropout):
-                m.p = 0.1
+                m.p = cfg.models.model.dropout_ratio2
 
-        model = model.to(Configuration.device)
+        model = model.to(ConfigurationHelper.device)
 
     return model

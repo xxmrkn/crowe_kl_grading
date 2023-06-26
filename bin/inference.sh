@@ -11,7 +11,7 @@ NODE=''
 
 sbatch --gres=gpu:${NUM_GPU} -n ${NUM_CORE} -D ${PROJECT} -w ${NODE} -o slurm/slurm_${NODE}_%j.out \
   --wrap="singularity exec --nv -B user -B user ${SIMG} \
-    python src/train.py \
-    -m models=vit_cls,vgg_cls,dense_cls \
-    ++models.general.datalist=2 \
-    ++models.optimizer.wd=0.001"
+    python /src/inference.py \
+    -m models=dense_reg \
+    ++models.general.datalist=1,2 \
+    ++models.inference.num_sampling=2"
