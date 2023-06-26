@@ -21,7 +21,7 @@ class MetricHelper(object):
             criterion = FocalLoss()
 
         else:
-            print(f"{cfg.models.criterion.name} Is Not Undefined !!")
+            print(f"{cfg.models.criterion.name} Is Not Defined !!")
 
         return criterion
 
@@ -32,7 +32,7 @@ class MetricHelper(object):
                                          lr = cfg.models.optimizer.lr,
                                          weight_decay = cfg.models.optimizer.wd)
         else:
-            print(f"{cfg.models.optimizer.name} Is Not Undefined !!")
+            print(f"{cfg.models.optimizer.name} Is Not Defined !!")
 
         return optimizer
     
@@ -43,6 +43,6 @@ class MetricHelper(object):
                                                        T_max = cfg.models.scheduler.t_max,
                                                        eta_min = cfg.models.scheduler.min_lr)
         else:
-            print(f"{cfg.models.scheduler.name} Is Not Undefined !!")
+            print(f"{cfg.models.scheduler.name} Is Not Defined !!")
 
         return scheduler
